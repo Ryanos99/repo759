@@ -1,9 +1,9 @@
 #include <cstddef>
 #include <iostream>
-#include <fstream>  
+#include <fstream>
 #include <cmath>
-#include <cstdlib>  
-#include <ctime>   
+#include <cstdlib>
+#include <ctime>
 #include <chrono>
 #include <random>
 
@@ -20,13 +20,29 @@ const double board_size = 4.0; // Size of the board
 void getAcc(const double pos[][3], const double mass[], double acc[][3], int N) {
 
     // TODO:
+    for (int i = 0; i < N; i++) {
+        acc[i][0] = 0;
+        acc[i][1] = 0;
+        acc[i][2] = 0;
+        for (int j = 0; j < N; j++) {
+            if (i != j) {
+                double dx = pos[j][0] - pos[i][0];
+                double dy = pos[j][1] - pos[i][1];
+                double dz = pos[j][2] - pos[i][2];
+                double inv_r3 = std::pow((std::pow(dx, 2) + std::pow(dy, 2) + std::pow(dz, 2) + std::pow(softening, 2)), -1.5);
+                acc[i][0] += G * (dx * inv_r3) * mass[j];
+                acc[i][1] += G * (dy * inv_r3) * mass[j];
+                acc[i][2] += G * (dz * inv_r3) * mass[j];
+            }
+        }
+    }
 
 }
 
 // For debug: save positions to a CSV file
 void savePositionsToCSV(const double pos[][3], int N, int step, const std::string &filename) {
     std::ofstream file;
-    
+
     // Open the file in append mode
     file.open(filename, std::ios_base::app);
 
@@ -126,25 +142,45 @@ int main(int argc, char *argv[]) {
 
     // Main simulation loop
     for (int step = 0; step < Nt; step++) {
-        
-        // TODO: (1/2) kick
 
+        // TODO: (1/2) kick
+        double half_step = dt / 2.0;
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < 3; j++) {
+                vel[i][j] += acc[i][j] * half_step;
+            }
+        }
 
         // TODO: Drift
-      
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < 3; j++) {
+                pos[i][j] += vel[i][j] * dt;
+            }
+        }
 
         // TODO: Ensure particles stay within the board limits
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (pos[i][j] > board_size) pos[i][j] = board_size;
+                else if (pos[i][j] < -board_size) pos[i][j] = -board_size;
+            }
+        }
 
         // Update accelerations
         getAcc(pos, mass, acc, N);
 
         // TODO: (1/2) kick
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < 3; j++) {
+                vel[i][j] += acc[i][j] * half_step;
+            }
+        }
 
         // Update time
         t += dt;
 
         // For debug: save positions to CSV at each step
-        // savePositionsToCSV(pos, N, step, filename);
+        savePositionsToCSV(pos, N, step, filename);
     }
 
     // Clean up dynamically allocated memory
