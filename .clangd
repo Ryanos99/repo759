@@ -1,0 +1,20 @@
+# Editor-only config: lets clangd understand CUDA files on macOS using the
+# stub header in .cuda-stubs/ (no CUDA toolkit needed). Ignored by nvcc.
+If:
+  PathMatch: [.*\.(cu|cuh), .*/\.cuda-stubs/.*]
+CompileFlags:
+  Add:
+    - -xcuda
+    - -std=c++17
+    - -nocudainc
+    - -nocudalib
+    - --cuda-host-only
+    - -I/Users/ryanosullivan/Desktop/S7/ECE759/repo759/.cuda-stubs
+    - -include
+    - cuda_runtime.h
+---
+If:
+  PathMatch: .*\.(cpp|h|hpp)
+  PathExclude: .*/\.cuda-stubs/.*
+CompileFlags:
+  Add: [-std=c++17]
